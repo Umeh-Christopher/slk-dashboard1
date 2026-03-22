@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SLK Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #e0e0e0; min-height: 100vh; }
+
+  /* Login */
+  .login-wrap { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+  .login-box { background: #111; border: 1px solid #1e1e1e; border-radius: 12px; padding: 40px; width: 100%; max-width: 360px; }
+  .login-title { font-size: 18px; font-weight: 600; margin-bottom: 24px; color: #fff; }
+  .login-box input { width: 100%; padding: 12px 16px; background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 8px; color: #e0e0e0; font-size: 14px; margin-bottom: 12px; outline: none; }
+  .login-box input:focus { border-color: #4ade80; }
+  .login-btn { width: 100%; padding: 12px; background: #4ade80; color: #000; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .login-btn:hover { background: #22c55e; }
+  .login-error { color: #f87171; font-size: 13px; margin-top: 8px; display: none; }
+
+  /* Admin panel */
+  .admin-panel { display: none; }
+  header { border-bottom: 1px solid #1e1e1e; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; }
+  .logo { font-size: 20px; font-weight: 600; letter-spacing: 2px; color: #fff; }
+  .logo span { color: #4ade80; }
+  .back-link { font-size: 13px; color: #555; text-decoration: none; }
+  .back-link:hover { color: #888; }
+
+  .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+  .section-title { font-size: 13px; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; }
+
+  .form-card { background: #111; border: 1px solid #1e1e1e; border-radius: 12px; padding: 32px; margin-bottom: 40px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 12px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
+  input, select, textarea { padding: 10px 14px; background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 8px; color: #e0e0e0; font-size: 14px; outline: none; width: 100%; }
+  input:focus, select:focus, textarea:focus { border-color: #4ade80; }
+  select option { background: #111; }
+  textarea { resize: vertical; min-height: 80px; font-family: inherit; }
+
+  .submit-btn { margin-top: 20px; padding: 12px 32px; background: #4ade80; color: #000; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .submit-btn:hover { background: #22c55e; }
+  .submit-btn:disabled { background: #2a2a2a; color: #555; cursor: not-allowed; }
+
+  .msg { margin-top: 12px; font-size: 13px; display: none; }
+  .msg.success { color: #4ade80; }
+  .msg.error { color: #f87171; }
+
+  /* Trade list */
+  .trade-row { background: #111; border: 1px solid #1e1e1e; border-radius: 8px; padding: 16px 20px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .trade-info { display: flex; gap: 16px; align-items: center; }
+  .trade-pair { font-weight: 600; color: #fff; }
+  .trade-meta { font-size: 13px; color: #555; }
+  .delete-btn { background: none; border: 1px solid #2a2a2a; color: #555; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+  .delete-btn:hover { border-color: #f87171; color: #f87171; }
+
+  .upload-area { border: 1px dashed #2a2a2a; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; font-size: 13px; color: #555; }
+  .upload-area:hover { border-color: #4ade80; color: #4ade80; }
+  .upload-preview { margin-top: 10px; max-width: 200px; border-radius: 6px; display: none; }
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div class="login-wrap" id="login-wrap">
+  <div class="login-box">
+    <div class="login-title">SLK Admin</div>
+    <input type="password" id="password-input" placeholder="Enter password" onkeydown="if(event.key==='Enter')login()">
+    <button class="login-btn" onclick="login()">Login</button>
+    <div class="login-error" id="login-error">Wrong password</div>
+  </div>
+</div>
+
+<!-- Admin Panel -->
+<div class="admin-panel" id="admin-panel">
+  <header>
+    <div class="logo">SLK <span>ADMIN</span></div>
+    <a href="index.html" class="back-link">View Dashboard</a>
+  </header>
+
+  <div class="container">
+    <div class="section-title">Add New Trade</div>
+    <div class="form-card">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Pair</label>
+          <select id="pair">
+            <option>EURUSD</option><option>GBPUSD</option><option>USDJPY</option>
+            <option>USDCHF</option><option>AUDUSD</option><option>USDCAD</option>
+            <option>NZDUSD</option><option>XAUUSD</option><option>XAGUSD</option>
+            <option>NAS100</option><option>GER40</option><option>EURGBP</option>
+            <option>EURJPY</option><option>GBPJPY</option><option>AUDJPY</option>
+            <option>EURCHF</option><option>GBPCHF</option><option>CADJPY</option>
+            <option>EURAUD</option><option>GBPAUD</option><option>GBPNZD</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Direction</label>
+          <select id="direction">
+            <option value="LONG">LONG</option>
+            <option value="SHORT">SHORT</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Entry Price</label>
+          <input type="number" id="entry" step="any" placeholder="1.08500">
+        </div>
+        <div class="form-group">
+          <label>Stop Loss</label>
+          <input type="number" id="sl" step="any" placeholder="1.08400">
+        </div>
+        <div class="form-group">
+          <label>TP1</label>
+          <input type="number" id="tp1" step="any" placeholder="1.08700">
+        </div>
+        <div class="form-group">
+          <label>TP2</label>
+          <input type="number" id="tp2" step="any" placeholder="1.08900">
+        </div>
+        <div class="form-group">
+          <label>TP3</label>
+          <input type="number" id="tp3" step="any" placeholder="1.09100">
+        </div>
+        <div class="form-group">
+          <label>Outcome</label>
+          <select id="outcome">
+            <option value="TP1">TP1 (+2R)</option>
+            <option value="TP2">TP2 (+3R)</option>
+            <option value="TP3">TP3 (+4R)</option>
+            <option value="SL">SL (-1R)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Trade Date</label>
+          <input type="date" id="trade-date">
+        </div>
+        <div class="form-group full">
+          <label>Notes (optional)</label>
+          <textarea id="notes" placeholder="Any extra context about this trade..."></textarea>
+        </div>
+        <div class="form-group full">
+          <label>Screenshot (MT5 / TradingView)</label>
+          <div class="upload-area" onclick="document.getElementById('screenshot-input').click()">
+            Click to upload screenshot
+            <input type="file" id="screenshot-input" accept="image/*" style="display:none" onchange="previewImg(this)">
+          </div>
+          <img id="upload-preview" class="upload-preview">
+        </div>
+      </div>
+      <button class="submit-btn" id="submit-btn" onclick="addTrade()">Add Trade</button>
+      <div class="msg success" id="success-msg">Trade added successfully.</div>
+      <div class="msg error" id="error-msg">Something went wrong.</div>
+    </div>
+
+    <div class="section-title">All Trades</div>
+    <div id="trade-list"><div style="color:#333;font-size:14px;">Loading...</div></div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL  = 'https://vohmoyjjivtzqgmzlvbz.supabase.co';
+const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZvaG1veWpqaXZ0enFnbXpsdmJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNjQ3MjQsImV4cCI6MjA4OTc0MDcyNH0.tRFiwt4DGObrXQXy1fWZi5TjjkZzMlcvG9nv0D3OnD0';
+const ADMIN_PASS    = 'Suki@6873';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const rMap = { TP1: 2, TP2: 3, TP3: 4, SL: -1 };
+
+function login() {
+  const pw = document.getElementById('password-input').value;
+  if (pw === ADMIN_PASS) {
+    document.getElementById('login-wrap').style.display  = 'none';
+    document.getElementById('admin-panel').style.display = 'block';
+    document.getElementById('trade-date').value = new Date().toISOString().split('T')[0];
+    loadTrades();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+function previewImg(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const prev = document.getElementById('upload-preview');
+    prev.src = e.target.result;
+    prev.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function uploadScreenshot(file, tradeId) {
+  if (!file) return null;
+  const ext  = file.name.split('.').pop();
+  const path = `${tradeId}.${ext}`;
+  const { error } = await sb.storage.from('screenshots').upload(path, file, { upsert: true });
+  if (error) return null;
+  const { data } = sb.storage.from('screenshots').getPublicUrl(path);
+  return data.publicUrl;
+}
+
+async function addTrade() {
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+
+  const outcome  = document.getElementById('outcome').value;
+  const tradeId  = crypto.randomUUID();
+  const file     = document.getElementById('screenshot-input').files[0];
+  const imgUrl   = await uploadScreenshot(file, tradeId);
+
+  const trade = {
+    id:         tradeId,
+    pair:       document.getElementById('pair').value,
+    direction:  document.getElementById('direction').value,
+    entry:      parseFloat(document.getElementById('entry').value),
+    sl:         parseFloat(document.getElementById('sl').value),
+    tp1:        parseFloat(document.getElementById('tp1').value),
+    tp2:        parseFloat(document.getElementById('tp2').value),
+    tp3:        parseFloat(document.getElementById('tp3').value),
+    outcome:    outcome,
+    r_result:   rMap[outcome],
+    trade_date: document.getElementById('trade-date').value,
+    notes:      document.getElementById('notes').value,
+    screenshot: imgUrl,
+  };
+
+  const { error } = await sb.from('trades').insert(trade);
+  btn.disabled = false; btn.textContent = 'Add Trade';
+
+  if (error) {
+    document.getElementById('error-msg').style.display = 'block';
+    setTimeout(() => document.getElementById('error-msg').style.display = 'none', 3000);
+  } else {
+    document.getElementById('success-msg').style.display = 'block';
+    setTimeout(() => document.getElementById('success-msg').style.display = 'none', 3000);
+    document.getElementById('upload-preview').style.display = 'none';
+    document.getElementById('screenshot-input').value = '';
+    loadTrades();
+  }
+}
+
+async function loadTrades() {
+  const { data } = await sb.from('trades').select('*').order('trade_date', { ascending: false });
+  const list = document.getElementById('trade-list');
+  if (!data || !data.length) { list.innerHTML = '<div style="color:#333;font-size:14px;">No trades yet.</div>'; return; }
+  list.innerHTML = data.map(t => `
+    <div class="trade-row">
+      <div class="trade-info">
+        <div class="trade-pair">${t.pair}</div>
+        <div class="trade-meta">${t.direction} | ${t.outcome || 'Pending'} | ${new Date(t.trade_date).toLocaleDateString('en-GB')}</div>
+      </div>
+      <button class="delete-btn" onclick="deleteTrade('${t.id}')">Delete</button>
+    </div>
+  `).join('');
+}
+
+async function deleteTrade(id) {
+  if (!confirm('Delete this trade?')) return;
+  await sb.from('trades').delete().eq('id', id);
+  loadTrades();
+}
+</script>
+</body>
+</html>

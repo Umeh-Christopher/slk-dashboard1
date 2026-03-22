@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SLK Trading — Performance</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #e0e0e0; min-height: 100vh; }
+
+  header { border-bottom: 1px solid #1e1e1e; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; }
+  .logo { font-size: 20px; font-weight: 600; letter-spacing: 2px; color: #fff; }
+  .logo span { color: #4ade80; }
+  .admin-link { font-size: 13px; color: #555; text-decoration: none; }
+  .admin-link:hover { color: #888; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: #1a1a1a; border-top: 1px solid #1e1e1e; border-bottom: 1px solid #1e1e1e; }
+  .stat { background: #0a0a0a; padding: 24px 32px; }
+  .stat-label { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .stat-value { font-size: 28px; font-weight: 600; color: #fff; }
+  .stat-value.green { color: #4ade80; }
+  .stat-value.red { color: #f87171; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 40px 20px; }
+  .section-title { font-size: 13px; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; }
+
+  .filters { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+  .filter-btn { padding: 6px 16px; border: 1px solid #2a2a2a; background: transparent; color: #888; border-radius: 20px; font-size: 13px; cursor: pointer; transition: all 0.15s; }
+  .filter-btn:hover, .filter-btn.active { border-color: #4ade80; color: #4ade80; background: rgba(74,222,128,0.05); }
+
+  .trades-grid { display: flex; flex-direction: column; gap: 1px; background: #1a1a1a; border-radius: 8px; overflow: hidden; }
+  .trade-card { background: #0f0f0f; padding: 20px 24px; display: grid; grid-template-columns: 80px 70px 100px 1fr 80px 80px; align-items: center; gap: 16px; transition: background 0.15s; }
+  .trade-card:hover { background: #141414; cursor: pointer; }
+
+  .pair { font-size: 15px; font-weight: 600; color: #fff; }
+  .direction { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 4px; text-align: center; }
+  .direction.long { background: rgba(74,222,128,0.15); color: #4ade80; }
+  .direction.short { background: rgba(248,113,113,0.15); color: #f87171; }
+
+  .entry-price { font-size: 14px; color: #888; font-family: monospace; }
+  .date { font-size: 12px; color: #444; }
+  .outcome-badge { font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 4px; text-align: center; }
+  .outcome-badge.tp1, .outcome-badge.tp2, .outcome-badge.tp3 { background: rgba(74,222,128,0.15); color: #4ade80; }
+  .outcome-badge.sl { background: rgba(248,113,113,0.15); color: #f87171; }
+  .r-result { font-size: 14px; font-weight: 600; text-align: right; }
+  .r-result.positive { color: #4ade80; }
+  .r-result.negative { color: #f87171; }
+
+  /* Modal */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: #111; border: 1px solid #1e1e1e; border-radius: 12px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
+  .modal-header { padding: 24px; border-bottom: 1px solid #1e1e1e; display: flex; justify-content: space-between; align-items: center; }
+  .modal-title { font-size: 18px; font-weight: 600; color: #fff; }
+  .modal-close { background: none; border: none; color: #555; font-size: 20px; cursor: pointer; }
+  .modal-close:hover { color: #fff; }
+  .modal-body { padding: 24px; }
+  .modal-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #1a1a1a; font-size: 14px; }
+  .modal-row:last-child { border-bottom: none; }
+  .modal-label { color: #555; }
+  .modal-value { color: #e0e0e0; font-weight: 500; }
+  .modal-screenshot { margin-top: 20px; }
+  .modal-screenshot img { width: 100%; border-radius: 8px; border: 1px solid #1e1e1e; }
+  .modal-screenshot .no-img { padding: 40px; text-align: center; color: #333; font-size: 13px; background: #0a0a0a; border-radius: 8px; border: 1px dashed #1e1e1e; }
+  .modal-notes { margin-top: 16px; padding: 16px; background: #0a0a0a; border-radius: 8px; font-size: 13px; color: #888; line-height: 1.6; }
+
+  .empty { text-align: center; padding: 80px 20px; color: #333; font-size: 14px; }
+  .loading { text-align: center; padding: 60px; color: #333; }
+
+  @media (max-width: 600px) {
+    header { padding: 16px 20px; }
+    .trade-card { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .date { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">SLK <span>TRADING</span></div>
+  <a href="admin.html" class="admin-link">Admin</a>
+</header>
+
+<div class="stats" id="stats">
+  <div class="stat"><div class="stat-label">Total Trades</div><div class="stat-value" id="total">—</div></div>
+  <div class="stat"><div class="stat-label">Win Rate</div><div class="stat-value green" id="winrate">—</div></div>
+  <div class="stat"><div class="stat-label">Total R</div><div class="stat-value" id="totalr">—</div></div>
+  <div class="stat"><div class="stat-label">Avg R/Trade</div><div class="stat-value" id="avgr">—</div></div>
+  <div class="stat"><div class="stat-label">Best Pair</div><div class="stat-value" id="bestpair">—</div></div>
+</div>
+
+<div class="container">
+  <div class="section-title">Closed Trades</div>
+  <div class="filters" id="filters">
+    <button class="filter-btn active" onclick="filterTrades('ALL', this)">All</button>
+    <button class="filter-btn" onclick="filterTrades('LONG', this)">Long</button>
+    <button class="filter-btn" onclick="filterTrades('SHORT', this)">Short</button>
+    <button class="filter-btn" onclick="filterTrades('WIN', this)">Wins</button>
+    <button class="filter-btn" onclick="filterTrades('SL', this)">Losses</button>
+  </div>
+  <div class="trades-grid" id="trades-grid">
+    <div class="loading">Loading trades...</div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Trade Detail</div>
+      <button class="modal-close" onclick="document.getElementById('modal').classList.remove('open')">x</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://vohmoyjjivtzqgmzlvbz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZvaG1veWpqaXZ0enFnbXpsdmJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNjQ3MjQsImV4cCI6MjA4OTc0MDcyNH0.tRFiwt4DGObrXQXy1fWZi5TjjkZzMlcvG9nv0D3OnD0';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let allTrades = [];
+let activeFilter = 'ALL';
+
+async function loadTrades() {
+  const { data, error } = await sb.from('trades').select('*').order('trade_date', { ascending: false });
+  if (error) { document.getElementById('trades-grid').innerHTML = '<div class="empty">Failed to load trades.</div>'; return; }
+  allTrades = data || [];
+  renderStats(allTrades);
+  renderTrades(allTrades);
+}
+
+function renderStats(trades) {
+  const total = trades.length;
+  const wins  = trades.filter(t => t.outcome && t.outcome !== 'SL').length;
+  const wr    = total ? Math.round(wins / total * 100) : 0;
+  const totalR = trades.reduce((s, t) => s + (t.r_result || 0), 0);
+  const avgR   = total ? (totalR / total).toFixed(2) : 0;
+
+  const pairR = {};
+  trades.forEach(t => { if (!pairR[t.pair]) pairR[t.pair] = 0; pairR[t.pair] += (t.r_result || 0); });
+  const bestPair = Object.entries(pairR).sort((a,b) => b[1]-a[1])[0];
+
+  document.getElementById('total').textContent   = total;
+  document.getElementById('winrate').textContent  = wr + '%';
+  document.getElementById('totalr').textContent   = (totalR >= 0 ? '+' : '') + totalR.toFixed(1) + 'R';
+  document.getElementById('totalr').className     = 'stat-value ' + (totalR >= 0 ? 'green' : 'red');
+  document.getElementById('avgr').textContent     = (avgR >= 0 ? '+' : '') + avgR + 'R';
+  document.getElementById('avgr').className       = 'stat-value ' + (avgR >= 0 ? 'green' : 'red');
+  document.getElementById('bestpair').textContent = bestPair ? bestPair[0] : '—';
+}
+
+function renderTrades(trades) {
+  const grid = document.getElementById('trades-grid');
+  if (!trades.length) { grid.innerHTML = '<div class="empty">No trades yet.</div>'; return; }
+  grid.innerHTML = trades.map(t => `
+    <div class="trade-card" onclick="openModal('${t.id}')">
+      <div class="pair">${t.pair}</div>
+      <div class="direction ${t.direction.toLowerCase()}">${t.direction}</div>
+      <div class="entry-price">${parseFloat(t.entry).toFixed(5)}</div>
+      <div class="date">${new Date(t.trade_date).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'})}</div>
+      <div class="outcome-badge ${(t.outcome||'').toLowerCase()}">${t.outcome || '—'}</div>
+      <div class="r-result ${(t.r_result||0) >= 0 ? 'positive' : 'negative'}">${t.r_result ? (t.r_result > 0 ? '+' : '') + t.r_result + 'R' : '—'}</div>
+    </div>
+  `).join('');
+}
+
+function filterTrades(filter, btn) {
+  activeFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  let filtered = allTrades;
+  if (filter === 'LONG')  filtered = allTrades.filter(t => t.direction === 'LONG');
+  if (filter === 'SHORT') filtered = allTrades.filter(t => t.direction === 'SHORT');
+  if (filter === 'WIN')   filtered = allTrades.filter(t => t.outcome && t.outcome !== 'SL');
+  if (filter === 'SL')    filtered = allTrades.filter(t => t.outcome === 'SL');
+  renderTrades(filtered);
+}
+
+function openModal(id) {
+  const t = allTrades.find(x => x.id === id);
+  if (!t) return;
+  const rMap = { TP1: '+2R', TP2: '+3R', TP3: '+4R', SL: '-1R' };
+  document.getElementById('modal-title').textContent = `${t.pair} ${t.direction}`;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="modal-row"><span class="modal-label">Date</span><span class="modal-value">${new Date(t.trade_date).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</span></div>
+    <div class="modal-row"><span class="modal-label">Entry</span><span class="modal-value">${parseFloat(t.entry).toFixed(5)}</span></div>
+    <div class="modal-row"><span class="modal-label">Stop Loss</span><span class="modal-value">${parseFloat(t.sl).toFixed(5)}</span></div>
+    <div class="modal-row"><span class="modal-label">TP1 / TP2 / TP3</span><span class="modal-value">${parseFloat(t.tp1).toFixed(5)} / ${parseFloat(t.tp2).toFixed(5)} / ${parseFloat(t.tp3).toFixed(5)}</span></div>
+    <div class="modal-row"><span class="modal-label">Outcome</span><span class="modal-value">${t.outcome || '—'} ${t.outcome ? '('+rMap[t.outcome]+')' : ''}</span></div>
+    ${t.notes ? `<div class="modal-notes">${t.notes}</div>` : ''}
+    <div class="modal-screenshot">
+      ${t.screenshot ? `<img src="${t.screenshot}" alt="Trade screenshot">` : '<div class="no-img">No screenshot uploaded yet</div>'}
+    </div>
+  `;
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal(e) {
+  if (e.target.id === 'modal') document.getElementById('modal').classList.remove('open');
+}
+
+loadTrades();
+</script>
+</body>
+</html>
