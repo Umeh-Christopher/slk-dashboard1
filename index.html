@@ -188,7 +188,7 @@ function openModal(id) {
     <div class="modal-row"><span class="modal-label">Entry</span><span class="modal-value">${(t.entry && !isNaN(t.entry)) ? parseFloat(t.entry).toFixed(5) : "—"}</span></div>
     <div class="modal-row"><span class="modal-label">Stop Loss</span><span class="modal-value">${(t.sl && !isNaN(t.sl)) ? parseFloat(t.sl).toFixed(5) : "—"}</span></div>
     <div class="modal-row"><span class="modal-label">Take Profit</span><span class="modal-value">${(t.tp1 && !isNaN(t.tp1)) ? parseFloat(t.tp1).toFixed(5) : "—"}</span></div>
-    <div class="modal-row"><span class="modal-label">Outcome</span><span class="modal-value">${t.outcome || '—'} ${t.outcome ? '('+rMap[t.outcome]+')' : ''}</span></div>
+    <div class="modal-row"><span class="modal-label">Outcome</span><span class="modal-value">${t.outcome ? (t.outcome.startsWith('TP') ? 'Take Profit' : 'Stop Loss') : '—'}</span></div>
     ${t.notes ? `<div class="modal-notes">${t.notes}</div>` : ''}
     <div class="modal-screenshot">
       ${t.screenshot ? `<img src="${t.screenshot}" alt="Trade screenshot">` : '<div class="no-img">No screenshot uploaded yet</div>'}
