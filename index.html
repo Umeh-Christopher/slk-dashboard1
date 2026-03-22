@@ -41,6 +41,7 @@
   .entry-price { font-size: 14px; color: #888; font-family: monospace; }
   .date { font-size: 12px; color: #444; }
   .outcome-badge { font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 4px; text-align: center; }
+  .outcome-badge.tp { background: rgba(74,222,128,0.15); color: #4ade80; }
   .outcome-badge.tp1, .outcome-badge.tp2, .outcome-badge.tp3 { background: rgba(74,222,128,0.15); color: #4ade80; }
   .outcome-badge.sl { background: rgba(248,113,113,0.15); color: #f87171; }
   .r-result { font-size: 14px; font-weight: 600; text-align: right; }
@@ -79,7 +80,7 @@
 
 <header>
   <div class="logo">SLK <span>TRADING</span></div>
-  <a href="admin.html" class="admin-link">Admin</a>
+  <!-- admin access via /admin.html directly -->
 </header>
 
 <div class="stats" id="stats">
@@ -115,8 +116,8 @@
 </div>
 
 <script>
-const SUPABASE_URL = 'https://vohmoyjjivtzqgmzlvbz.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZvaG1veWpqaXZ0enFnbXpsdmJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNjQ3MjQsImV4cCI6MjA4OTc0MDcyNH0.tRFiwt4DGObrXQXy1fWZi5TjjkZzMlcvG9nv0D3OnD0';
+const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let allTrades = [];
@@ -157,7 +158,7 @@ function renderTrades(trades) {
     <div class="trade-card" onclick="openModal('${t.id}')">
       <div class="pair">${t.pair}</div>
       <div class="direction ${t.direction.toLowerCase()}">${t.direction}</div>
-      <div class="entry-price">${parseFloat(t.entry).toFixed(5)}</div>
+      <div class="entry-price">${(t.entry && !isNaN(t.entry)) ? parseFloat(t.entry).toFixed(5) : "—"}</div>
       <div class="date">${new Date(t.trade_date).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'})}</div>
       <div class="outcome-badge ${(t.outcome||'').toLowerCase()}">${t.outcome || '—'}</div>
       <div class="r-result ${(t.r_result||0) >= 0 ? 'positive' : 'negative'}">${t.r_result ? (t.r_result > 0 ? '+' : '') + t.r_result + 'R' : '—'}</div>
@@ -184,9 +185,9 @@ function openModal(id) {
   document.getElementById('modal-title').textContent = `${t.pair} ${t.direction}`;
   document.getElementById('modal-body').innerHTML = `
     <div class="modal-row"><span class="modal-label">Date</span><span class="modal-value">${new Date(t.trade_date).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</span></div>
-    <div class="modal-row"><span class="modal-label">Entry</span><span class="modal-value">${parseFloat(t.entry).toFixed(5)}</span></div>
-    <div class="modal-row"><span class="modal-label">Stop Loss</span><span class="modal-value">${parseFloat(t.sl).toFixed(5)}</span></div>
-    <div class="modal-row"><span class="modal-label">TP1 / TP2 / TP3</span><span class="modal-value">${parseFloat(t.tp1).toFixed(5)} / ${parseFloat(t.tp2).toFixed(5)} / ${parseFloat(t.tp3).toFixed(5)}</span></div>
+    <div class="modal-row"><span class="modal-label">Entry</span><span class="modal-value">${(t.entry && !isNaN(t.entry)) ? parseFloat(t.entry).toFixed(5) : "—"}</span></div>
+    <div class="modal-row"><span class="modal-label">Stop Loss</span><span class="modal-value">${(t.sl && !isNaN(t.sl)) ? parseFloat(t.sl).toFixed(5) : "—"}</span></div>
+    <div class="modal-row"><span class="modal-label">Take Profit</span><span class="modal-value">${(t.tp1 && !isNaN(t.tp1)) ? parseFloat(t.tp1).toFixed(5) : "—"}</span></div>
     <div class="modal-row"><span class="modal-label">Outcome</span><span class="modal-value">${t.outcome || '—'} ${t.outcome ? '('+rMap[t.outcome]+')' : ''}</span></div>
     ${t.notes ? `<div class="modal-notes">${t.notes}</div>` : ''}
     <div class="modal-screenshot">
