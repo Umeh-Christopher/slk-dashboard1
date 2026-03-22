@@ -106,8 +106,10 @@
         <div class="form-group">
           <label>Outcome</label>
           <select id="outcome">
-            <option value="TP">TP (Win)</option>
-            <option value="SL">SL (Loss)</option>
+            <option value="TP3">+3R (Take Profit)</option>
+            <option value="TP2">+2R (Take Profit)</option>
+            <option value="TP1">+1R (Partial)</option>
+            <option value="SL">-1R (Stop Loss)</option>
           </select>
         </div>
         <div class="form-group">
@@ -142,7 +144,7 @@ const SUPABASE_URL  = 'https://vohmoyjjivtzqgmzlvbz.supabase.co';
 const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZvaG1veWpqaXZ0enFnbXpsdmJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNjQ3MjQsImV4cCI6MjA4OTc0MDcyNH0.tRFiwt4DGObrXQXy1fWZi5TjjkZzMlcvG9nv0D3OnD0';
 const ADMIN_PASS    = 'Suki@6873';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const rMap = { TP: 2, SL: -1 };
+const rMap = { TP3: 3, TP2: 2, TP1: 1, SL: -1 };
 
 function login() {
   const pw = document.getElementById('password-input').value;
