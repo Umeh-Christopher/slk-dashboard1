@@ -159,7 +159,7 @@ function renderTrades(trades) {
       <div class="pair">${t.pair}</div>
       <div class="direction ${t.direction.toLowerCase()}">${t.direction}</div>
       <div class="entry-price">${(t.entry && !isNaN(t.entry)) ? parseFloat(t.entry).toFixed(5) : "—"}</div>
-      <div class="date">${new Date(t.trade_date).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'})}</div>
+      <div class="date">${new Date(t.trade_date + 'T12:00:00').toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'})}</div>
       <div class="outcome-badge ${(t.outcome||'').toLowerCase()}">${t.outcome === 'TP3' ? '+3R' : t.outcome === 'TP2' ? '+2R' : t.outcome === 'TP1' ? '+1R' : t.outcome === 'SL' ? '-1R' : t.outcome || '—'}</div>
       <div class="r-result ${(t.r_result||0) >= 0 ? 'positive' : 'negative'}">${t.r_result !== null && t.r_result !== undefined ? (t.r_result > 0 ? '+' : '') + t.r_result + 'R' : '—'}</div>
     </div>
@@ -184,7 +184,7 @@ function openModal(id) {
   const rMap = { TP1: '+2R', TP2: '+3R', TP3: '+4R', SL: '-1R' };
   document.getElementById('modal-title').textContent = `${t.pair} ${t.direction}`;
   document.getElementById('modal-body').innerHTML = `
-    <div class="modal-row"><span class="modal-label">Date</span><span class="modal-value">${new Date(t.trade_date).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</span></div>
+    <div class="modal-row"><span class="modal-label">Date</span><span class="modal-value">${new Date(t.trade_date + 'T12:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</span></div>
     <div class="modal-row"><span class="modal-label">Entry</span><span class="modal-value">${(t.entry && !isNaN(t.entry)) ? parseFloat(t.entry).toFixed(5) : "—"}</span></div>
     <div class="modal-row"><span class="modal-label">Stop Loss</span><span class="modal-value">${(t.sl && !isNaN(t.sl)) ? parseFloat(t.sl).toFixed(5) : "—"}</span></div>
     <div class="modal-row"><span class="modal-label">Take Profit</span><span class="modal-value">${(t.tp1 && !isNaN(t.tp1)) ? parseFloat(t.tp1).toFixed(5) : "—"}</span></div>
